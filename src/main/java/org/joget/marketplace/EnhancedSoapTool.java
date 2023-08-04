@@ -172,7 +172,7 @@ public class EnhancedSoapTool extends SoapTool {
 
     @Override
     public String getVersion() {
-        return "8.0.0";
+        return "7.0.0";
     }
 
     @Override
