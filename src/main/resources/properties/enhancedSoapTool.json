@@ -1,0 +1,150 @@
+[{
+    title : '@@app.soaptool.config@@',
+    properties : [{
+        name : 'wsdlUrl',
+        label : '@@app.soaptool.wsdlUrl@@',
+        type : 'textfield',
+        required : 'True'
+    },
+    {
+        name : 'operationName',
+        label : '@@app.soaptool.operationName@@',
+        type : 'textfield',
+        required : 'True'
+    },
+    {
+        name : 'username',
+        label : '@@app.soaptool.username@@',
+        type : 'textfield'
+    },
+    {
+        name : 'password',
+        label : '@@app.soaptool.password@@',
+        type : 'password'
+    },
+    {
+        name : 'params',
+        label : '@@app.soaptool.params@@',
+        type : 'grid',
+        columns : [{
+            key : 'value',
+            label : '@@app.soaptool.param@@'
+        }]
+    },
+    {
+        name : 'customNamespaces',
+        label : '@@app.soaptool.customNamespaces@@',
+        type : 'grid',
+        description : '@@app.soaptool.customNamespaces.desc@@',
+        columns : [{
+            key : 'prefix',
+            label : '@@app.soaptool.customNamespaces.prefix@@'
+        },
+        {
+            key : 'uri',
+            label : '@@app.soaptool.customNamespaces.uri@@'
+        }]
+    },
+    {
+        name : 'xml',
+        label : '@@app.soaptool.xml@@',
+        type : 'codeeditor',
+        mode : 'xml',
+        description : '@@app.soaptool.xml.desc@@'
+    },
+    {
+        name : 'soapAction',
+        label : '@@app.soaptool.soapAction@@',
+        type : 'textfield',
+        description : '@@app.soaptool.soapAction.desc@@'
+    }]
+},
+{
+    title : '@@app.soaptool.storeReqResToForm@@',
+    properties : [{
+        name : 'reqResformDefId',
+        label : '@@app.soaptool.formId@@',
+        type : 'selectbox',
+        options_ajax:'[CONTEXT_PATH]/web/json/console/app[APP_PATH]/forms/options'
+    },
+    {
+        name : 'requestFieldId',
+        label : '@@app.soaptool.requestFieldId@@',
+        type : 'selectbox',
+        options_ajax_on_change : 'formDefId:reqResformDefId',
+        options_ajax : '[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options',
+        control_field :'reqResformDefId',
+        control_value:'^.+$',
+        control_use_regex:'true'
+    },
+    {
+        name : 'responseFieldId',
+        label : '@@app.soaptool.responseFieldId@@',
+        type : 'selectbox',
+        options_ajax_on_change : 'formDefId:reqResformDefId',
+        options_ajax : '[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options',
+        control_field :'reqResformDefId',
+        control_value:'^.+$',
+        control_use_regex:'true'
+    }
+    ]
+},
+{
+    title : '@@app.soaptool.storeToForm@@',
+    properties : [{
+        name : 'formDefId',
+        label : '@@app.soaptool.formId@@',
+        type : 'selectbox',
+        options_ajax : '[CONTEXT_PATH]/web/json/console/app/%s/%s/forms/options'
+    },
+    {
+        name : 'multirowBaseObject',
+        label : '@@app.soaptool.baseObject@@',
+        type : 'textfield'
+    },
+    {
+        name : 'fieldMapping',
+        label : '@@app.soaptool.fieldMapping@@',
+        type : 'grid',
+        columns : [{
+            key : 'field',
+            label : '@@app.soaptool.fieldName@@',
+            options_ajax_on_change : 'formDefId',
+            options_ajax : '[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options'
+        },
+        {
+            key : 'jsonObjectName',
+            label : '@@app.soaptool.objectName@@'
+        }]
+    }]
+},
+{
+    title : '@@app.soaptool.storeToWorkflowVariable@@',
+    properties : [{
+        name : 'wfVariableMapping',
+        label : '@@app.soaptool.workflowVariableMapping@@',
+        type : 'grid',
+        columns : [{
+            key : 'variable',
+            label : '@@app.soaptool.workflowVariable@@',
+            options_ajax : '[CONTEXT_PATH]/web/json/console/app[APP_PATH]/workflowVariable/options'
+        },
+        {
+            key : 'jsonObjectName',
+            label : '@@app.soaptool.objectName@@'
+        }]
+    }]
+},
+{
+    title : '@@app.soaptool.Advanced@@',
+    properties : [{
+        name : 'debug',
+        label : '@@app.soaptool.debug@@',
+        description : '@@app.soaptool.debug.desc@@',
+        type : 'checkbox',
+        options : [{
+            value : 'true',
+            label : ''
+        }]
+    }]
+}]

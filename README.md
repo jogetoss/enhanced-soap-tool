@@ -1,6 +1,7 @@
 # Description
 
-This repository is meant to serve as a general template for how to set up new repositories in the JogetOSS organization. 
+This Enhanced SOAP Tool allows user to save the request and response payload of a call to webservice for integration purpose.
+
 
 # Getting Help
 
