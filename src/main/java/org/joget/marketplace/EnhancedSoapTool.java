@@ -3,7 +3,22 @@ package org.joget.marketplace;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.service.AppService;
 import org.joget.apps.app.service.AppUtil;
@@ -17,6 +32,7 @@ import org.joget.plugin.property.service.PropertyUtil;
 import org.joget.workflow.model.WorkflowAssignment;
 import org.joget.workflow.util.WorkflowUtil;
 import org.json.JSONObject;
+import org.json.XML;
 
 public class EnhancedSoapTool extends SoapTool {
 
@@ -44,10 +60,15 @@ public class EnhancedSoapTool extends SoapTool {
 
             Object[] customNamespaces = (Object[]) properties.get("customNamespaces");
 
+            Boolean useWSS = false;
+            if (properties.get("useWSS") != null && "true".equals((String) properties.get("useWSS"))) {
+                useWSS = true;
+            }
+
             if (xml != null && !xml.isEmpty()) {
                 xml = WorkflowUtil.processVariable(xml, "", wfAssignment);
                 String soapAction = (String) properties.get("soapAction");
-                jsonResponse = xmlCall(wsdlUrl, username, password, operationName, customNamespaces, xml, soapAction, debug);
+                jsonResponse = xmlCall(wsdlUrl, username, password, operationName, customNamespaces, xml, soapAction, debug, useWSS);
             } else {
                 Collection<String> params = new ArrayList<>();
                 Object[] paramsValues = (Object[]) properties.get("params");
@@ -159,6 +180,120 @@ public class EnhancedSoapTool extends SoapTool {
         String tableName = appService.getFormTableName(appDef, formDefId);
         appService.storeFormData(formDefId, tableName, rows, null);
     }
+
+      protected String xmlCall(String wsdlURL, String username, String password, String operationName, Object[] customNamespaces, String xml, String soapAction, boolean debug, boolean useWSS) throws Exception {
+        if (!(wsdlURL == null || wsdlURL.isEmpty() || xml == null || xml.isEmpty())) {
+            CloseableHttpClient httpclient = null;
+            try {
+                HttpClientBuilder httpClientBuilder = HttpClients.custom();
+                
+                if(username != null && !username.isEmpty()){
+                    CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                    credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+                    httpClientBuilder.setDefaultCredentialsProvider(credsProvider);
+                }
+                
+                httpclient = httpClientBuilder.build();
+                wsdlURL = wsdlURL.replaceAll("(?i)\\?WSDL", "");
+                HttpPost post = new HttpPost(wsdlURL);
+                
+                String customNs = "";
+                
+                if (ArrayUtils.isNotEmpty(customNamespaces)) {
+                    for (Object ns : customNamespaces) {
+                        Map mapping = (HashMap) ns;
+                        String prefix = mapping.get("prefix").toString();
+                        String uri = mapping.get("uri").toString();
+                        customNs += "xmlns:" + prefix + "=\"" + uri + "\" ";
+                    }
+                }
+                
+                if (soapAction != null && !soapAction.isEmpty()) {
+                    LogUtil.info(SoapTool.class.getName(), "Using SOAP 1.1. SOAP Action is " + soapAction);
+                    post.addHeader("Content-Type", "text/xml; charset=utf-8");
+                    post.addHeader("SOAPAction", soapAction);
+                    String requestXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+                    requestXml += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" ";
+                    requestXml += customNs;
+                    requestXml += ">\n";
+                    if(useWSS){
+                        requestXml += "<soapenv:Header>\n<wsse:Security soapenv:mustUnderstand='1' xmlns:wsse='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd' xmlns:wsu='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'>\n";
+                        requestXml += "<wsse:UsernameToken>\n<wsse:Username>" + username + "</wsse:Username>\n";
+                        requestXml += " <wsse:Password>" + password + "</wsse:Password>\n</wsse:UsernameToken>\n";
+                        requestXml += "</wsse:Security>\n</soapenv:Header>\n";
+                    }
+                    requestXml += "  <soap:Body>\n";
+                    requestXml += xml;
+                    requestXml += "  </soap:Body>\n";
+                    requestXml += "</soap:Envelope>";
+                    HttpEntity entity = new ByteArrayEntity(requestXml.getBytes("UTF-8"));
+                    post.setEntity(entity);
+                } else {
+                    post.addHeader("Content-Type", "application/soap+xml; charset=utf-8");
+                    String requestXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+                    requestXml += "<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\" ";
+                    requestXml += customNs;
+                    requestXml += ">\n";
+                    if(useWSS){
+                        requestXml += "<soapenv:Header>\n<wsse:Security soapenv:mustUnderstand='1' xmlns:wsse='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd' xmlns:wsu='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'>\n";
+                        requestXml += "<wsse:UsernameToken>\n<wsse:Username>" + username + "</wsse:Username>\n";
+                        requestXml += " <wsse:Password>" + password + "</wsse:Password>\n</wsse:UsernameToken>\n";
+                        requestXml += "</wsse:Security>\n</soapenv:Header>\n";
+                    }                    
+                    requestXml += "  <soap12:Body>\n";
+                    requestXml += xml;
+                    requestXml += "  </soap12:Body>\n";
+                    requestXml += "</soap12:Envelope>";
+                    HttpEntity entity = new ByteArrayEntity(requestXml.getBytes("UTF-8"));
+                    post.setEntity(entity);
+                }
+                
+                HttpResponse httpResponse = httpclient.execute(post);
+                String response = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+                response = convertStringResponse(response);
+                
+                JSONObject temp = XML.toJSONObject(response);
+                JSONObject result = findRootElement(temp, operationName);
+                result = beautifierResult(result);
+                
+                if (result != null) {
+                    return result.toString();
+                }
+            } catch (Exception e) {
+                LogUtil.error(getClass().getName(), e, "");
+            } finally {
+                if (httpclient != null) {
+                    httpclient.close();
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    protected JSONObject findRootElement(JSONObject element, String operationName) throws Exception {
+        JSONObject returnElement = element;
+        
+        Iterator<String> iterator = returnElement.keys();
+	while (iterator.hasNext()) {
+            String key = iterator.next();
+            if (key.endsWith(":Envelope")) {
+                returnElement = returnElement.getJSONObject(key);
+                iterator = returnElement.keys();
+            } else if (key.endsWith(":Body")) {
+                returnElement = returnElement.getJSONObject(key);
+                
+                if (returnElement.has(operationName + "Response")) {
+                    returnElement = returnElement.getJSONObject(operationName + "Response");
+                }
+                
+                break;
+            }
+	}
+        
+        return returnElement;
+    }
+    
 
     @Override
     public String getName() {
