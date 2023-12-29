@@ -4,7 +4,7 @@
     <groupId>org.joget.marketplace</groupId>
     <artifactId>enhanced-soap-tool</artifactId>
     <packaging>bundle</packaging>
-    <version>7.0.0</version>
+    <version>7.0.1</version>
     <name>enhanced-soap-tool</name>
     <url>http://www.joget.org</url>
     <build>
@@ -125,15 +125,7 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.12.0</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20230227</version>
-        </dependency>
-
-        
+        </dependency>    
     </dependencies>
     <distributionManagement>
         <repository>
