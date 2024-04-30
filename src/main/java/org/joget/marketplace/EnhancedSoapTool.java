@@ -31,6 +31,7 @@ import org.joget.plugin.enterprise.SoapTool;
 import org.joget.plugin.property.service.PropertyUtil;
 import org.joget.workflow.model.WorkflowAssignment;
 import org.joget.workflow.util.WorkflowUtil;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.XML;
 
@@ -69,6 +70,22 @@ public class EnhancedSoapTool extends SoapTool {
                 xml = WorkflowUtil.processVariable(xml, "", wfAssignment);
                 String soapAction = (String) properties.get("soapAction");
                 jsonResponse = xmlCall(wsdlUrl, username, password, operationName, customNamespaces, xml, soapAction, debug, useWSS);
+                // Check if the jsonResponse is null or empty
+                if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
+                    LogUtil.info(getClass().getName(), "No JSON response to process, the response is null or empty.");
+                    return null;
+                } else {
+                    // Parse the jsonResponse to check if it's an empty JSON object
+                    JSONObject responseJson = new JSONObject(jsonResponse);
+                    if (!responseJson.keys().hasNext()) { // Check if there are no keys in the JSON object
+                        LogUtil.info(getClass().getName(), "The JSON response is an empty object.");
+                        return null;
+                    } else {
+                        // The jsonResponse contains data and will be processed
+                        LogUtil.info(getClass().getName(), "JSON response found and will be processed");
+                        // Continue with processing the jsonResponse
+                    }
+                }
             } else {
                 Collection<String> params = new ArrayList<>();
                 Object[] paramsValues = (Object[]) properties.get("params");
@@ -78,9 +95,17 @@ public class EnhancedSoapTool extends SoapTool {
                     params.add(WorkflowUtil.processVariable(value, "", wfAssignment));
                 }
                 jsonResponse = call(wsdlUrl, username, password, operationName, params.toArray(new String[0]), debug);
+                // Check if the jsonResponse is null or empty or an empty JSON object
+                if (jsonResponse == null || jsonResponse.trim().isEmpty() || isJsonEmpty(jsonResponse)) {
+                    LogUtil.info(getClass().getName(), "No JSON response to process or JSON object is empty after parameter-based call.");
+                    return null;
+                } else {
+                    // The jsonResponse contains data and will be processed
+                    LogUtil.info(getClass().getName(), "JSON response found and will be processed after parameter-based call.");
+                    // Continue with processing the jsonResponse
+                }
             }
 
-            
             // store the request and response
             jsonRequest = prepareRequest(properties);
             if (reqResformDefId != null && !reqResformDefId.isEmpty()) {
@@ -181,24 +206,24 @@ public class EnhancedSoapTool extends SoapTool {
         appService.storeFormData(formDefId, tableName, rows, null);
     }
 
-      protected String xmlCall(String wsdlURL, String username, String password, String operationName, Object[] customNamespaces, String xml, String soapAction, boolean debug, boolean useWSS) throws Exception {
+    protected String xmlCall(String wsdlURL, String username, String password, String operationName, Object[] customNamespaces, String xml, String soapAction, boolean debug, boolean useWSS) throws Exception {
         if (!(wsdlURL == null || wsdlURL.isEmpty() || xml == null || xml.isEmpty())) {
             CloseableHttpClient httpclient = null;
             try {
                 HttpClientBuilder httpClientBuilder = HttpClients.custom();
-                
-                if(username != null && !username.isEmpty()){
+
+                if (username != null && !username.isEmpty()) {
                     CredentialsProvider credsProvider = new BasicCredentialsProvider();
                     credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
                     httpClientBuilder.setDefaultCredentialsProvider(credsProvider);
                 }
-                
+
                 httpclient = httpClientBuilder.build();
                 wsdlURL = wsdlURL.replaceAll("(?i)\\?WSDL", "");
                 HttpPost post = new HttpPost(wsdlURL);
-                
+
                 String customNs = "";
-                
+
                 if (ArrayUtils.isNotEmpty(customNamespaces)) {
                     for (Object ns : customNamespaces) {
                         Map mapping = (HashMap) ns;
@@ -207,7 +232,7 @@ public class EnhancedSoapTool extends SoapTool {
                         customNs += "xmlns:" + prefix + "=\"" + uri + "\" ";
                     }
                 }
-                
+
                 if (soapAction != null && !soapAction.isEmpty()) {
                     LogUtil.info(SoapTool.class.getName(), "Using SOAP 1.1. SOAP Action is " + soapAction);
                     post.addHeader("Content-Type", "text/xml; charset=utf-8");
@@ -216,7 +241,7 @@ public class EnhancedSoapTool extends SoapTool {
                     requestXml += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" ";
                     requestXml += customNs;
                     requestXml += ">\n";
-                    if(useWSS){
+                    if (useWSS) {
                         requestXml += "<soapenv:Header>\n<wsse:Security xmlns:wsse='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'>\n";
                         requestXml += "<wsse:UsernameToken>\n<wsse:Username>" + username + "</wsse:Username>\n";
                         requestXml += " <wsse:Password>" + password + "</wsse:Password>\n</wsse:UsernameToken>\n";
@@ -234,12 +259,12 @@ public class EnhancedSoapTool extends SoapTool {
                     requestXml += "<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\" ";
                     requestXml += customNs;
                     requestXml += ">\n";
-                    if(useWSS){
+                    if (useWSS) {
                         requestXml += "<soapenv:Header>\n<wsse:Security xmlns:wsse='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'>\n";
                         requestXml += "<wsse:UsernameToken>\n<wsse:Username>" + username + "</wsse:Username>\n";
                         requestXml += " <wsse:Password>" + password + "</wsse:Password>\n</wsse:UsernameToken>\n";
                         requestXml += "</wsse:Security>\n</soapenv:Header>\n";
-                    }                    
+                    }
                     requestXml += "  <soap12:Body>\n";
                     requestXml += xml;
                     requestXml += "  </soap12:Body>\n";
@@ -247,15 +272,20 @@ public class EnhancedSoapTool extends SoapTool {
                     HttpEntity entity = new ByteArrayEntity(requestXml.getBytes("UTF-8"));
                     post.setEntity(entity);
                 }
-                
+
                 HttpResponse httpResponse = httpclient.execute(post);
                 String response = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+                // Check if the response is empty or null
+                if (response == null || response.trim().isEmpty()) {
+                    LogUtil.info(getClass().getName(), "Empty or null response received from the server");
+                    return null;
+                }
                 response = convertStringResponse(response);
-                
+
                 JSONObject temp = XML.toJSONObject(response);
                 JSONObject result = findRootElement(temp, operationName);
                 result = beautifierResult(result);
-                
+
                 if (result != null) {
                     return result.toString();
                 }
@@ -267,33 +297,37 @@ public class EnhancedSoapTool extends SoapTool {
                 }
             }
         }
-        
+
         return null;
     }
 
     protected JSONObject findRootElement(JSONObject element, String operationName) throws Exception {
         JSONObject returnElement = element;
-        
+
         Iterator<String> iterator = returnElement.keys();
-	while (iterator.hasNext()) {
+        while (iterator.hasNext()) {
             String key = iterator.next();
             if (key.endsWith(":Envelope")) {
                 returnElement = returnElement.getJSONObject(key);
                 iterator = returnElement.keys();
             } else if (key.endsWith(":Body")) {
                 returnElement = returnElement.getJSONObject(key);
-                
+
                 if (returnElement.has(operationName + "Response")) {
                     returnElement = returnElement.getJSONObject(operationName + "Response");
                 }
-                
+
                 break;
             }
-	}
-        
+        }
+
         return returnElement;
     }
-    
+
+    private boolean isJsonEmpty(String jsonStr) throws JSONException {
+        JSONObject responseJson = new JSONObject(jsonStr);
+        return !responseJson.keys().hasNext();
+    }
 
     @Override
     public String getName() {
