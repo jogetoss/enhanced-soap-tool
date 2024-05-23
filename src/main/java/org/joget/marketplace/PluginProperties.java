@@ -2,7 +2,6 @@ package org.joget.marketplace;
 
 import java.util.Collection;
 import java.util.Map;
-import org.joget.workflow.util.WorkflowUtil;
 
 public class PluginProperties {
 
@@ -145,5 +144,4 @@ public class PluginProperties {
     public void setDebug(String debug) {
         this.debug = debug;
     }
-
 }
