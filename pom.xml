@@ -4,7 +4,7 @@
     <groupId>org.joget.marketplace</groupId>
     <artifactId>enhanced-soap-tool</artifactId>
     <packaging>bundle</packaging>
-    <version>7.0.2</version>
+    <version>7.0.3</version>
     <name>enhanced-soap-tool</name>
     <url>http://www.joget.org</url>
     <build>
@@ -125,7 +125,14 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.12.0</version>
-        </dependency>    
+        </dependency>  
+        
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.8</version>
+        </dependency>
+            
     </dependencies>
     <distributionManagement>
         <repository>

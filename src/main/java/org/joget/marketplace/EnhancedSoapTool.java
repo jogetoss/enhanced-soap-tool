@@ -1,5 +1,6 @@
 package org.joget.marketplace;
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -188,9 +189,10 @@ public class EnhancedSoapTool extends SoapTool {
         pp.setFieldMapping(fieldMap);
         pp.setWfVariableMapping(wfVarMap);
         pp.setDebug(debug);
-
-        JSONObject jSONObject = new JSONObject(pp);
-        requestJson = jSONObject.toString();
+        
+        Gson gson = new Gson();
+        requestJson = gson.toJson(pp);
+        
         return requestJson;
     }
 
@@ -341,7 +343,7 @@ public class EnhancedSoapTool extends SoapTool {
 
     @Override
     public String getVersion() {
-        return "7.0.2";
+        return "7.0.3";
     }
 
     @Override
