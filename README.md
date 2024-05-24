@@ -2,6 +2,8 @@
 
 This Enhanced SOAP Tool allows user to save the request and response payload of a call to webservice for integration purpose.
 
+To setup and configure this plugin, please see the [documentation](https://dev.joget.org/community/display/marketplace/Enhanced+Soap+Tool).
+
 
 # Getting Help
 
