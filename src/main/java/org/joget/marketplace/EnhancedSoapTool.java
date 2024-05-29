@@ -199,13 +199,29 @@ public class EnhancedSoapTool extends SoapTool {
     private void save(String request, String response, String formDefId, String requestFieldId, String responseFieldId) {
         AppDefinition appDef = AppUtil.getCurrentAppDefinition();
         AppService appService = (AppService) FormUtil.getApplicationContext().getBean("appService");
-        FormRowSet rows = new FormRowSet();
+        
+        //Get record Id from process
+        WorkflowAssignment wfAssignment = (WorkflowAssignment) getProperties().get("workflowAssignment");
+        String id = appService.getOriginProcessId(wfAssignment.getProcessId());
+        
+        //Load the original Form Data record
         FormRow row = new FormRow();
+        FormRowSet rowSet = appService.loadFormData(appDef.getAppId(), appDef.getVersion().toString(), formDefId, id);
+        if (!rowSet.isEmpty()) {
+            row = rowSet.get(0);
+        }
+        
         row.put(requestFieldId, request);
         row.put(responseFieldId, response);
-        rows.add(row);
+        
+        if (!rowSet.isEmpty()) {
+            rowSet.set(0, row);
+        } else {
+            rowSet.add(0, row);
+        }
+        
         String tableName = appService.getFormTableName(appDef, formDefId);
-        appService.storeFormData(formDefId, tableName, rows, null);
+        appService.storeFormData(formDefId, tableName, rowSet, id);
     }
 
     protected String xmlCall(String wsdlURL, String username, String password, String operationName, Object[] customNamespaces, String xml, String soapAction, boolean debug, boolean useWSS) throws Exception {
@@ -343,7 +359,7 @@ public class EnhancedSoapTool extends SoapTool {
 
     @Override
     public String getVersion() {
-        return "7.0.3";
+        return "7.0.4";
     }
 
     @Override
