@@ -23,6 +23,9 @@ public class PluginProperties {
     private Map<String, String> wfVariableMapping;
 
     private String debug;
+    
+    private String connectionTimeout;
+    private String socketTimeout;
 
     public String getWsdlUrl() {
         return wsdlUrl;
@@ -143,5 +146,21 @@ public class PluginProperties {
 
     public void setDebug(String debug) {
         this.debug = debug;
+    }
+
+    public String getConnectionTimeout() {
+        return connectionTimeout;
+    }
+
+    public void setConnectionTimeout(String connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
+    }
+
+    public String getSocketTimeout() {
+        return socketTimeout;
+    }
+
+    public void setSocketTimeout(String socketTimeout) {
+        this.socketTimeout = socketTimeout;
     }
 }

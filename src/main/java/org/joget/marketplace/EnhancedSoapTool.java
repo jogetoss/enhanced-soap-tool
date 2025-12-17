@@ -13,6 +13,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -55,6 +56,24 @@ public class EnhancedSoapTool extends SoapTool {
             String username = WorkflowUtil.processVariable((String) properties.get("username"), "", wfAssignment);
             String password = WorkflowUtil.processVariable((String) properties.get("password"), "", wfAssignment);
             String xml = (String) properties.get("xml");
+            
+            // Retrieve timeout values from plugin properties
+            int connectionTimeout = 30000; // Default to 30,000 milliseconds (30 seconds)
+            int socketTimeout = 30000;     // Default to 30,000 milliseconds (30 seconds)
+
+            String connectionTimeoutStr = WorkflowUtil.processVariable((String) properties.get("connectionTimeout"), "", wfAssignment);
+            String socketTimeoutStr = WorkflowUtil.processVariable((String) properties.get("socketTimeout"), "", wfAssignment);;
+
+            try {
+                if (connectionTimeoutStr != null && !connectionTimeoutStr.isEmpty()) {
+                    connectionTimeout = Integer.parseInt(connectionTimeoutStr);
+                }
+                if (socketTimeoutStr != null && !socketTimeoutStr.isEmpty()) {
+                    socketTimeout = Integer.parseInt(socketTimeoutStr);
+                }
+            } catch (NumberFormatException e) {
+                LogUtil.warn(getClass().getName(), "Invalid timeout value provided. Using default timeouts.");
+            }
 
             String reqResformDefId = (String) properties.get("reqResformDefId");
             String requestFieldId = (String) properties.get("requestFieldId");
@@ -70,7 +89,7 @@ public class EnhancedSoapTool extends SoapTool {
             if (xml != null && !xml.isEmpty()) {
                 xml = WorkflowUtil.processVariable(xml, "", wfAssignment);
                 String soapAction = (String) properties.get("soapAction");
-                jsonResponse = xmlCall(wsdlUrl, username, password, operationName, customNamespaces, xml, soapAction, debug, useWSS);
+                jsonResponse = xmlCall(wsdlUrl, username, password, operationName, customNamespaces, xml, soapAction, debug, useWSS, connectionTimeout, socketTimeout);
                 // Check if the jsonResponse is null or empty
                 if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
                     LogUtil.info(getClass().getName(), "No JSON response to process, the response is null or empty.");
@@ -172,6 +191,9 @@ public class EnhancedSoapTool extends SoapTool {
         }
 
         String debug = (String) properties.get("debug");
+        
+        String connectionTimeoutStr = WorkflowUtil.processVariable((String) properties.get("connectionTimeout"), "", wfAssignment);
+        String socketTimeoutStr = WorkflowUtil.processVariable((String) properties.get("socketTimeout"), "", wfAssignment);;
 
         PluginProperties pp = new PluginProperties();
         pp.setWsdlUrl(wsdlUrl);
@@ -189,6 +211,8 @@ public class EnhancedSoapTool extends SoapTool {
         pp.setFieldMapping(fieldMap);
         pp.setWfVariableMapping(wfVarMap);
         pp.setDebug(debug);
+        pp.setConnectionTimeout(connectionTimeoutStr);
+        pp.setSocketTimeout(socketTimeoutStr);
         
         Gson gson = new Gson();
         requestJson = gson.toJson(pp);
@@ -224,7 +248,7 @@ public class EnhancedSoapTool extends SoapTool {
         appService.storeFormData(formDefId, tableName, rowSet, id);
     }
 
-    protected String xmlCall(String wsdlURL, String username, String password, String operationName, Object[] customNamespaces, String xml, String soapAction, boolean debug, boolean useWSS) throws Exception {
+    protected String xmlCall(String wsdlURL, String username, String password, String operationName, Object[] customNamespaces, String xml, String soapAction, boolean debug, boolean useWSS, int connectionTimeout, int socketTimeout) throws Exception {
         if (!(wsdlURL == null || wsdlURL.isEmpty() || xml == null || xml.isEmpty())) {
             CloseableHttpClient httpclient = null;
             try {
@@ -235,6 +259,13 @@ public class EnhancedSoapTool extends SoapTool {
                     credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
                     httpClientBuilder.setDefaultCredentialsProvider(credsProvider);
                 }
+
+                // Configure timeouts
+                RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectTimeout(connectionTimeout)
+                    .setSocketTimeout(socketTimeout)
+                    .build();
+                httpClientBuilder.setDefaultRequestConfig(requestConfig);
 
                 httpclient = httpClientBuilder.build();
                 wsdlURL = wsdlURL.replaceAll("(?i)\\?WSDL", "");
@@ -359,7 +390,7 @@ public class EnhancedSoapTool extends SoapTool {
 
     @Override
     public String getVersion() {
-        return "7.0.4";
+        return "7.0.5";
     }
 
     @Override

@@ -74,6 +74,20 @@
                 "label": "@@app.soaptool.soapAction@@",
                 "type": "textfield",
                 "description": "@@app.soaptool.soapAction.desc@@"
+            },
+            {
+                "name": "connectionTimeout",
+                "label": "@@app.soaptool.connectionTimeout@@",
+                "type": "textfield",
+                "description": "@@app.soaptool.connectionTimeout.desc@@",
+                "default_value": "30000"
+            },
+            {
+                "name": "socketTimeout",
+                "label": "@@app.soaptool.socketTimeout@@",
+                "type": "textfield",
+                "description": "@@app.soaptool.socketTimeout.desc@@",
+                "default_value": "30000"
             }
         ]
     },
